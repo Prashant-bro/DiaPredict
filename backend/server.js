@@ -23,8 +23,9 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/chat', require('./routes/chat'));
 app.use('/api/upload', require('./routes/upload'));
 
-// Health check
+// Health check & Root
 app.get('/health', (req, res) => res.json({ status: 'healthy', service: 'backend' }));
+app.get('/', (req, res) => res.json({ status: 'running', message: 'Diabetes Risk Assessment Backend API' }));
 
 // Only listen when running locally (not on Vercel)
 if (process.env.VERCEL !== '1') {
