@@ -31,7 +31,7 @@ app.use(cors((req, callback) => {
 }));
 
 // DB Connection
-mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/diabetes_system')
+mongoose.connect(process.env.MONGO_URL || 'mongodb://localhost:27017/diabetes_system')
     .then(() => console.log('MongoDB connected'))
     .catch(err => console.log('MongoDB connection error:', err));
 
