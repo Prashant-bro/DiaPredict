@@ -29,14 +29,14 @@ mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/diabetes_sy
     .then(() => console.log('MongoDB connected'))
     .catch(err => console.log('MongoDB connection error:', err));
 
+// Health check & Root (Move to top for reliability)
+app.get('/health', (req, res) => res.json({ status: 'healthy', service: 'backend' }));
+app.get('/', (req, res) => res.json({ status: 'running', message: 'Diabetes Risk Assessment Backend API' }));
+
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/chat', require('./routes/chat'));
 app.use('/api/upload', require('./routes/upload'));
-
-// Health check & Root
-app.get('/health', (req, res) => res.json({ status: 'healthy', service: 'backend' }));
-app.get('/', (req, res) => res.json({ status: 'running', message: 'Diabetes Risk Assessment Backend API' }));
 
 // Only listen when running locally (not on Vercel)
 if (process.env.VERCEL !== '1') {
