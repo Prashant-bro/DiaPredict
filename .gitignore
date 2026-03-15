@@ -1,0 +1,45 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+
+# Environment variables
+.env
+.env.local
+.env.production
+
+# Build output
+dist/
+build/
+
+# Large data files
+data.csv
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Uploads directory
+uploads/
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Vercel
+.vercel/
+
+# Test/debug scripts
+backend/db_check.js
+backend/remove_validation.js
+backend/test-upload.js
+backend/test_register.js
+backend/valid.pdf
+
+# ML training artifacts (images)
+ml_api/confusion_matrix.png
+ml_api/feature_importance.png
