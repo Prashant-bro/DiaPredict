@@ -12,22 +12,22 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(express.json());
 
-// Diagnostic logging for Vercel
-app.use((req, res, next) => {
-    console.log(`Incoming request: ${req.method} ${req.url}`);
-    next();
-});
+// CORS Configuration
+app.use(cors((req, callback) => {
+    const origin = req.header('Origin');
+    const frontendUrl = process.env.FRONTEND_URL ? process.env.FRONTEND_URL.replace(/\/$/, '') : null;
+    
+    const allowed = [
+        frontendUrl,
+        'http://localhost:3000',
+        'http://localhost:5173'
+    ].filter(Boolean);
 
-// CORS Configuration using Environment Variables
-const allowedOrigins = [
-    process.env.FRONTEND_URL,              // Your production URL
-    'http://localhost:3000',               // Common local dev ports
-    'http://localhost:5173'
-].filter(Boolean); // Remove undefined/null if FRONTEND_URL isn't set
-
-app.use(cors({
-    origin: allowedOrigins,
-    credentials: true
+    if (!origin || allowed.includes(origin.replace(/\/$/, ''))) {
+        callback(null, { origin: true, credentials: true });
+    } else {
+        callback(null, { origin: false });
+    }
 }));
 
 // DB Connection
@@ -35,9 +35,24 @@ mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/diabetes_sy
     .then(() => console.log('MongoDB connected'))
     .catch(err => console.log('MongoDB connection error:', err));
 
-// Health check & Root (Move to top for reliability)
-app.get('/health', (req, res) => res.json({ status: 'healthy', service: 'backend' }));
-app.get('/', (req, res) => res.json({ status: 'running', message: 'Diabetes Risk Assessment Backend API' }));
+// Health check & Root
+app.get('/health', (req, res) => {
+    const states = ['disconnected', 'connected', 'connecting', 'disconnecting'];
+    res.json({ 
+        status: 'healthy', 
+        service: 'backend',
+        database: states[mongoose.connection.readyState]
+    });
+});
+
+app.get('/', (req, res) => {
+    const states = ['disconnected', 'connected', 'connecting', 'disconnecting'];
+    res.json({ 
+        status: 'running', 
+        message: 'Diabetes Risk Assessment Backend API',
+        database: states[mongoose.connection.readyState]
+    });
+});
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));
