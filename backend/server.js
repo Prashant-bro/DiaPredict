@@ -12,6 +12,12 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(express.json());
 
+// Diagnostic logging for Vercel
+app.use((req, res, next) => {
+    console.log(`Incoming request: ${req.method} ${req.url}`);
+    next();
+});
+
 // CORS Configuration using Environment Variables
 const allowedOrigins = [
     process.env.FRONTEND_URL,              // Your production URL
