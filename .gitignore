@@ -43,5 +43,13 @@ backend/valid.pdf
 # ML training artifacts (images)
 ml_api/confusion_matrix.png
 ml_api/feature_importance.png
+
+# Project Cleanup (Added from instruction)
+backend/ # Added from instruction
+frontend_old/ # Added from instruction
+
+# Other
 start_local.bat
 Tech Stack.txt
+frontend/AGENTS.md
+frontend/CLAUDE.md
