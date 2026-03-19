@@ -43,3 +43,5 @@ backend/valid.pdf
 # ML training artifacts (images)
 ml_api/confusion_matrix.png
 ml_api/feature_importance.png
+start_local.bat
+Tech Stack.txt

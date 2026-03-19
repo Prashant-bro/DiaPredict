@@ -61,7 +61,7 @@ Now collect these ADDITIONAL features one at a time (these were NOT asked in the
 - Income (Income level 1-8 where 1=Less than $10k ... 8=$75k+)
 
 At the END of every message, output a secret JSON block enclosed in \`\`\`json\`\`\` with the keys for extracted variables as numbers.
-When you have collected at least 4 of these additional fields, add "ready_to_predict": true to the JSON block.`;
+DO NOT add "ready_to_predict": true until you have collected at least 5 of these additional fields. I need lots of detail for the deeper insights flow.`;
 
 // Helper: call Gemini with fallback
 async function callGemini(systemPrompt, history, message) {
@@ -133,6 +133,32 @@ function formatRiskMessage(results, isFollowup = false) {
             : `_This is an AI-based screening result and not a medical diagnosis._\n\n💡 **Want more accurate results?** Type "deeper insights" and I'll ask a few more questions to refine your risk score.`);
 }
 
+// GET /api/chat (Retrieve history)
+router.get('/', protect, async (req, res) => {
+    try {
+        // Find latest assessment (completed, followup, or pending)
+        const chat = await Assessment.findOne(
+            { userId: req.user._id },
+            null,
+            { sort: { updatedAt: -1 } }
+        );
+
+        if (!chat) {
+            return res.json({ messages: [], riskAssessment: null, extractedData: {} });
+        }
+
+        res.json({
+            messages: chat.messages,
+            riskAssessment: chat.riskAssessment,
+            extractedData: chat.extractedData,
+            status: chat.riskAssessment.status
+        });
+    } catch (error) {
+        console.error("History Retrieval Error:", error);
+        res.status(500).json({ message: error.message });
+    }
+});
+
 router.post('/', protect, async (req, res) => {
     try {
         const { message } = req.body;
@@ -143,24 +169,27 @@ router.post('/', protect, async (req, res) => {
                             message.toLowerCase().includes('more detail') ||
                             message.toLowerCase().includes('refine');
 
-        // Find existing assessment - check for pending, followup, or completed
-        let chat = await Assessment.findOne({ userId: req.user._id, 'riskAssessment.status': 'pending' });
+        // Find existing assessment - check for non-completed ones first
+        let chat = await Assessment.findOne({ 
+            userId: req.user._id, 
+            'riskAssessment.status': { $in: ['pending', 'followup'] } 
+        }, null, { sort: { updatedAt: -1 } });
         
-        // If no pending, check for followup in progress
+        // If not found, check if most recent completed one should be re-opened for followup
         if (!chat) {
-            chat = await Assessment.findOne({ userId: req.user._id, 'riskAssessment.status': 'followup' });
-        }
-
-        // If user wants deeper insights, find their completed assessment and reopen it
-        if (!chat && wantsDeeper) {
-            chat = await Assessment.findOne(
-                { userId: req.user._id, 'riskAssessment.status': 'completed' },
-                null,
-                { sort: { updatedAt: -1 } }
-            );
-            if (chat) {
+            chat = await Assessment.findOne({ userId: req.user._id }, null, { sort: { updatedAt: -1 } });
+            
+            // If it's completed and the user wants deeper insights, reopen it
+            if (chat && chat.riskAssessment.status === 'completed' && wantsDeeper) {
                 chat.riskAssessment.status = 'followup';
                 await chat.save();
+            } else if (chat && chat.riskAssessment.status === 'completed') {
+                // If the user's message is just a "yes/no" or similar, it might be a dangling response
+                // after a prediction. Let's start a new one only if the last was more than 30 mins ago.
+                const wasRecent = (Date.now() - new Date(chat.updatedAt).getTime()) < 30 * 60 * 1000;
+                if (!wasRecent) {
+                    chat = null;
+                }
             }
         }
 
@@ -183,7 +212,7 @@ router.post('/', protect, async (req, res) => {
         let botReply = await callGemini(activePrompt, history, message);
 
         // Extract JSON state
-        const jsonMatch = botReply.match(/```json\n([\s\S]*?)\n```/);
+        const jsonMatch = botReply.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/i);
         let updatedData = {};
         if (jsonMatch) {
             try {
@@ -201,15 +230,26 @@ router.post('/', protect, async (req, res) => {
             }
         }
 
+        // AGGRESSIVE CLEANUP: Remove ANY remaining technical markers in case the regex/parser failed
+        botReply = botReply.replace(/```json[\s\S]*?```/gi, '');
+        botReply = botReply.replace(/```[\s\S]*?```/gi, ''); // Any other code blocks
+        botReply = botReply.replace(/```json/gi, ''); // Partial tags
+        botReply = botReply.replace(/```/gi, ''); // Remaining backticks
+        botReply = botReply.trim();
+
         chat.messages.push({ role: 'model', content: botReply });
         await chat.save();
 
         // Check if we should trigger prediction
         const filledFields = Object.values(chat.extractedData).filter(v => v !== null).length;
         const readyToPredict = updatedData.ready_to_predict === true;
+        
+        // Specifically for followup, count how many followup-specific fields we have
+        const followupFields = ['AnyHealthcare', 'NoDocbcCost', 'MentHlth', 'PhysHlth', 'DiffWalk', 'Education', 'Income'];
+        const filledFollowup = followupFields.filter(f => chat.extractedData[f] !== null).length;
 
         const shouldPredict = isFollowup 
-            ? (readyToPredict || filledFields >= 18 || message.toLowerCase().includes('score'))
+            ? (!wantsDeeper && ((readyToPredict && filledFollowup >= 4) || filledFollowup >= 6 || (message.toLowerCase().includes('score') && message.length < 15)))
             : (filledFields >= 5 || readyToPredict || message.toLowerCase().includes('score'));
 
         if (shouldPredict) {

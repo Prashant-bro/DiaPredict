@@ -123,6 +123,32 @@ const Chatbot = ({ onAssessmentComplete }) => {
     };
 
     useEffect(() => {
+        const fetchHistory = async () => {
+            setLoading(true);
+            try {
+                const res = await axios.get(`${API_URL}/api/chat`);
+                if (res.data.messages && res.data.messages.length > 0) {
+                    setMessages(res.data.messages);
+                    
+                    // If assessment was complete, attach the result to the last message index
+                    if (res.data.riskAssessment && res.data.riskAssessment.status === 'completed') {
+                        setRiskResults([{
+                            index: res.data.messages.length - 1,
+                            data: res.data.riskAssessment
+                        }]);
+                    }
+                }
+            } catch (error) {
+                console.error("Failed to fetch chat history:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchHistory();
+    }, []);
+
+    useEffect(() => {
         scrollToBottom();
     }, [messages]);
 

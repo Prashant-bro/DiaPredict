@@ -41,4 +41,6 @@ const AssessmentSchema = new mongoose.Schema({
     }
 }, { timestamps: true });
 
+AssessmentSchema.index({ userId: 1, updatedAt: -1 });
+
 module.exports = mongoose.model('Assessment', AssessmentSchema, 'assessments');

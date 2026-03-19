@@ -13,7 +13,7 @@ function App() {
   const GOOGLE_CLIENT_ID = "672797424971-m2u49iko5jttdde4kfo9bo6iujvjg2kd.apps.googleusercontent.com";
 
   return (
-    <div className="min-h-screen relative flex flex-col bg-white overflow-hidden font-sans selection:bg-slate-200 selection:text-slate-900">
+    <div className="min-h-screen relative flex flex-col bg-white font-sans selection:bg-slate-200 selection:text-slate-900">
 
       <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
         <Router>
