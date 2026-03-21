@@ -16,18 +16,17 @@ Do NOT ask multiple questions at once. Be empathetic and professional.
 Fields to collect:
 1. HighBP (High Blood Pressure: 0=No, 1=Yes)
 2. HighChol (High Cholesterol: 0=No, 1=Yes)
-3. CholCheck (Cholesterol check within 5 years: 0=No, 1=Yes)
-4. BMI (Body Mass Index)
-5. Smoker (Smoked at least 100 cigarettes: 0=No, 1=Yes)
-6. Stroke (Ever had a stroke: 0=No, 1=Yes)
-7. HeartDiseaseorAttack (Coronary heart disease or MI: 0=No, 1=Yes)
-8. PhysActivity (Physical activity within 30 days: 0=No, 1=Yes)
-9. Fruits (Consume fruit 1+ times/day: 0=No, 1=Yes)
-10. Veggies (Consume vegetables 1+ times/day: 0=No, 1=Yes)
-11. HvyAlcoholConsump (Heavy drinker: 0=No, 1=Yes)
-12. GenHlth (General health: 1=Excellent, 2=Very Good, 3=Good, 4=Fair, 5=Poor)
-13. Sex (0=Female, 1=Male)
-14. Age (Age category: 1=18-24, 2=25-29, 3=30-34, 4=35-39, 5=40-44, 6=45-49, 7=50-54, 8=55-59, 9=60-64, 10=65-69, 11=70-74, 12=75-79, 13=80+)
+3. BMI (Body Mass Index)
+4. Smoker (Smoked at least 100 cigarettes: 0=No, 1=Yes)
+5. Stroke (Ever had a stroke: 0=No, 1=Yes)
+6. HeartDiseaseorAttack (Coronary heart disease or MI: 0=No, 1=Yes)
+7. PhysActivity (Physical activity within 30 days: 0=No, 1=Yes)
+8. Fruits (Consume fruit 1+ times/day: 0=No, 1=Yes)
+9. Veggies (Consume vegetables 1+ times/day: 0=No, 1=Yes)
+10. HvyAlcoholConsump (Heavy drinker: 0=No, 1=Yes)
+11. GenHlth (General health: 1=Excellent, 2=Very Good, 3=Good, 4=Fair, 5=Poor)
+12. Sex (0=Female, 1=Male)
+13. Age (Age category: 1=18-24, 2=25-29, 3=30-34, 4=35-39, 5=40-44, 6=45-49, 7=50-54, 8=55-59, 9=60-64, 10=65-69, 11=70-74, 12=75-79, 13=80+)
 
 MANDATORY JSON FORMAT:
 At the end of every response, you MUST include a JSON block with any extracted or updated fields.
@@ -45,16 +44,12 @@ Set "ready_to_predict": true only when you have collected enough info (at least 
 const FOLLOWUP_PROMPT = `
 The user wants deeper insights. Collect more detailed lifestyle data one by one.
 Fields:
-1. AnyHealthcare (Any health insurance: 0=No, 1=Yes)
-2. NoDocbcCost (Couldn't see doctor due to cost: 0=No, 1=Yes)
-3. MentHlth (Days of poor mental health in last 30 days)
-4. PhysHlth (Days of poor physical health in last 30 days)
-5. DiffWalk (Difficulty walking or climbing stairs: 0=No, 1=Yes)
-6. Education (1-6 scale)
-7. Income (1-8 scale)
+1. MentHlth (Days of poor mental health in last 30 days)
+2. PhysHlth (Days of poor physical health in last 30 days)
+3. DiffWalk (Difficulty walking or climbing stairs: 0=No, 1=Yes)
 
 MANDATORY: include JSON at the end.
-Do NOT set "ready_to_predict": true until you have collected at least 5 additional fields.
+Do NOT set "ready_to_predict": true until you have collected at least 3 additional fields.
 `;
 
 async function callGemini(systemPrompt, history, message) {
@@ -71,7 +66,6 @@ function buildPayload(data) {
     return {
         HighBP: data.HighBP || 0,
         HighChol: data.HighChol || 0,
-        CholCheck: data.CholCheck || 0,
         BMI: data.BMI || 25,
         Smoker: data.Smoker || 0,
         Stroke: data.Stroke || 0,
@@ -80,16 +74,12 @@ function buildPayload(data) {
         Fruits: data.Fruits || 1,
         Veggies: data.Veggies || 1,
         HvyAlcoholConsump: data.HvyAlcoholConsump || 0,
-        AnyHealthcare: data.AnyHealthcare || 1,
-        NoDocbcCost: data.NoDocbcCost || 0,
         GenHlth: data.GenHlth || 3,
         MentHlth: data.MentHlth || 0,
         PhysHlth: data.PhysHlth || 0,
         DiffWalk: data.DiffWalk || 0,
         Sex: data.Sex || 0,
         Age: data.Age || 5,
-        Education: data.Education || 4,
-        Income: data.Income || 5
     };
 }
 

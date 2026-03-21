@@ -23,9 +23,9 @@ export async function POST(req) {
         const base64PDF = buffer.toString("base64");
 
         const extractionPrompt = `You are a medical data extraction tool. Extract the following potential diabetes risk factors from this medical report. 
-        Output ONLY a JSON object matching these keys (use generic sensible values like 0 or 1 for booleans).
-        If a value is not found, omit it from the JSON.
-        Keys: HighBP, HighChol, BMI, Smoker, Stroke, GenHlth, Sex, Age.`;
+        Output ONLY a JSON object matching these keys (use generic sensible values like or any numeric value whatever is required).
+        If user says No then imagine it to 0 and Yes for 1.
+        Keys: HighBP, HighChol, BMI, Smoker, Stroke, GenHlth, Sex, Age, HvyAlcoholConsump, PhysActivity, Fruits, Veggies, DiffWalk, MentHlth, PhysHlth`;
 
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 

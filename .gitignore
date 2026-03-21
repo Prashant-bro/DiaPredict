@@ -53,3 +53,6 @@ start_local.bat
 Tech Stack.txt
 frontend/AGENTS.md
 frontend/CLAUDE.md
+frontend/lint_unix.txt
+frontend/lint_output.json
+frontend/lint_output.txt
