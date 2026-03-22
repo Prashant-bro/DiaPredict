@@ -6,13 +6,14 @@ import { OAuth2Client } from 'google-auth-library';
 
 export async function POST(req) {
     try {
-        const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+        const googleClientId = process.env.GOOGLE_CLIENT_ID || process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+        const client = new OAuth2Client(googleClientId);
         await dbConnect();
         const { credential } = await req.json();
 
         const ticket = await client.verifyIdToken({
             idToken: credential,
-            audience: process.env.GOOGLE_CLIENT_ID,
+            audience: googleClientId,
         });
         
         const payload = ticket.getPayload();
@@ -38,3 +39,4 @@ export async function POST(req) {
         return NextResponse.json({ message: "Google Authentication Failed" }, { status: 400 });
     }
 }
+
