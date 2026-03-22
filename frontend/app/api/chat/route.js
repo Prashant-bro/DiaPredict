@@ -5,8 +5,8 @@ import { NextResponse } from "next/server";
 import axios from 'axios';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const ML_API_URL = process.env.ML_API_URL || 'http://localhost:8000';
+
 
 const SYSTEM_PROMPT = `
 You are a medical assistant chatbot for diabetes risk screening.
@@ -53,6 +53,7 @@ Do NOT set "ready_to_predict": true until you have collected at least 3 addition
 `;
 
 async function callGemini(systemPrompt, history, message) {
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     const chat = model.startChat({
         history: history,

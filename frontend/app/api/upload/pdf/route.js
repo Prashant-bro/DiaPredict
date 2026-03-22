@@ -4,7 +4,6 @@ import dbConnect from "@/lib/db";
 import Assessment from "@/lib/models/Assessment";
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 export async function POST(req) {
     try {
@@ -27,6 +26,7 @@ export async function POST(req) {
         If user says No then imagine it to 0 and Yes for 1.
         Keys: HighBP, HighChol, BMI, Smoker, Stroke, GenHlth, Sex, Age, HvyAlcoholConsump, PhysActivity, Fruits, Veggies, DiffWalk, MentHlth, PhysHlth`;
 
+        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
         let result = await model.generateContent([
