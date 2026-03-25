@@ -18,6 +18,7 @@ export async function POST(req) {
             user: { _id: user._id, name: user.name, email: user.email }
         });
     } catch (error) {
+        console.error("[Login Error]:", error.message, error.stack);
         return NextResponse.json({ message: error.message }, { status: 500 });
     }
 }
