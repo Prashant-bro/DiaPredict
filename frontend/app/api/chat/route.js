@@ -86,10 +86,12 @@ export async function GET(req) {
         const user = await verifyAuth(req);
         if (!user) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
+        // Ensure user.id is correctly parsed if it's a string from JWT
         const chat = await Assessment.findOne({ userId: user.id }).sort({ updatedAt: -1 });
         return NextResponse.json(chat || { messages: [] });
     } catch (error) {
-        return NextResponse.json({ message: error.message }, { status: 500 });
+        console.error("[GET /api/chat error]:", error.message);
+        return NextResponse.json({ message: "Failed to fetch chat history: " + error.message }, { status: 500 });
     }
 }
 
@@ -100,6 +102,8 @@ export async function POST(req) {
         if (!user) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
         const { message } = await req.json();
+        if (!message) return NextResponse.json({ message: "Message is required" }, { status: 400 });
+
         const wantsDeeper = message.toLowerCase().includes('deeper insights') || 
                             message.toLowerCase().includes('more detail') ||
                             message.toLowerCase().includes('refine');
@@ -134,7 +138,13 @@ export async function POST(req) {
             parts: [{ text: m.content }]
         }));
 
-        let botReply = await callGemini(activePrompt, history, message);
+        let botReply;
+        try {
+            botReply = await callGemini(activePrompt, history, message);
+        } catch (gemIniError) {
+            console.error("Gemini API Error:", gemIniError.message);
+            return NextResponse.json({ message: "AI Assistant is currently unavailable." }, { status: 500 });
+        }
 
         const jsonMatch = botReply.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/i);
         let updatedData = {};
@@ -172,7 +182,7 @@ export async function POST(req) {
         if (shouldPredict) {
             const payload = buildPayload(chat.extractedData);
             try {
-                const mlResponse = await axios.post(`${ML_API_URL}/predict`, payload);
+                const mlResponse = await axios.post(`${ML_API_URL}/predict`, payload, { timeout: 8000 });
                 chat.riskAssessment = {
                     ...mlResponse.data,
                     status: 'completed',
@@ -188,7 +198,7 @@ export async function POST(req) {
                     complete: true
                 });
             } catch (err) {
-                console.error("ML API Error:", err);
+                console.error("ML API Error:", err.message);
                 return NextResponse.json({
                     reply: botReply + "\n\n(Note: I'm currently having trouble calculating your risk score. Please try again in a moment.)",
                     riskAssessment: chat.riskAssessment,
@@ -204,7 +214,7 @@ export async function POST(req) {
         });
 
     } catch (error) {
-        console.error("Chat Error:", error);
-        return NextResponse.json({ message: error.message }, { status: 500 });
+        console.error("Chat Error:", error.message, error.stack);
+        return NextResponse.json({ message: "Internal Server Error: " + error.message }, { status: 500 });
     }
 }

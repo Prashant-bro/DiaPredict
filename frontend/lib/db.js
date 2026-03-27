@@ -10,13 +10,7 @@ async function dbConnect() {
   const MONGODB_URI = process.env.MONGO_URI;
 
   if (!MONGODB_URI) {
-    console.error('[DB] MONGO_URI is not defined in environment variables');
     throw new Error('Please define the MONGO_URI environment variable inside .env.local');
-  }
-
-  // Warn if URI has quotes (common .env mistake)
-  if (MONGODB_URI.startsWith('"') || MONGODB_URI.startsWith("'")) {
-    console.error('[DB] WARNING: MONGO_URI contains quotes — remove them from .env.local');
   }
 
   if (cached.conn) {
@@ -26,9 +20,12 @@ async function dbConnect() {
   if (!cached.promise) {
     const opts = {
       bufferCommands: false,
+      serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of hanging
     };
 
+    console.log('[DB] Connecting to MongoDB...');
     cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
+      console.log('[DB] Connected successfully');
       return mongoose;
     });
   }
@@ -36,6 +33,7 @@ async function dbConnect() {
   try {
     cached.conn = await cached.promise;
   } catch (e) {
+    console.error('[DB] Connection failed:', e.message);
     cached.promise = null;
     throw e;
   }
