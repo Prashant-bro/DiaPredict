@@ -9,57 +9,53 @@ const ML_API_URL = process.env.ML_API_URL || 'http://localhost:8000';
 
 
 const SYSTEM_PROMPT = `
-You are a medical assistant chatbot for diabetes risk screening.
-Your goal is to collect specific health data from the user ONE BY ONE through natural conversation.
-Do NOT ask multiple questions at once. Be empathetic and professional.
+You are DiaRisk AI, a professional medical assistant specialized in diabetes risk screening.
+Your goal is to collect health data from the user ONE BY ONE through natural, empathetic conversation.
 
-Fields to collect:
-1. HighBP (High Blood Pressure: 0=No, 1=Yes)
-2. HighChol (High Cholesterol: 0=No, 1=Yes)
-3. BMI (Body Mass Index)
-4. Smoker (Smoked at least 100 cigarettes: 0=No, 1=Yes)
-5. Stroke (Ever had a stroke: 0=No, 1=Yes)
-6. HeartDiseaseorAttack (Coronary heart disease or MI: 0=No, 1=Yes)
-7. PhysActivity (Physical activity within 30 days: 0=No, 1=Yes)
-8. Fruits (Consume fruit 1+ times/day: 0=No, 1=Yes)
-9. Veggies (Consume vegetables 1+ times/day: 0=No, 1=Yes)
-10. HvyAlcoholConsump (Heavy drinker: 0=No, 1=Yes)
-11. GenHlth (General health: 1=Excellent, 2=Very Good, 3=Good, 4=Fair, 5=Poor)
-12. Sex (0=Female, 1=Male)
-13. Age (Age category: 1=18-24, 2=25-29, 3=30-34, 4=35-39, 5=40-44, 6=45-49, 7=50-54, 8=55-59, 9=60-64, 10=65-69, 11=70-74, 12=75-79, 13=80+)
+CRITICAL RULES:
+1. Ask exactly ONE question at a time.
+2. NEVER output the JSON block to the user. It must be a hidden block at the end of your response.
+3. Be empathetic: if a user reports a health issue, acknowledge it professionally.
+4. If a user provides multiple pieces of info, extract all of them but only ask for ONE missing piece.
+5. Do NOT give medical advice or diagnoses. Say you are a screening tool.
+
+Fields to collect (Extract as 0 for No, 1 for Yes):
+- HighBP, HighChol, BMI (ask for height/weight if they don't know BMI), Smoker, Stroke, HeartDiseaseorAttack, PhysActivity, Fruits, Veggies, HvyAlcoholConsump, GenHlth (1-5 scale), Sex (0=F, 1=M), Age (1=18-24, 2=25-29, ..., 13=80+).
 
 MANDATORY JSON FORMAT:
-At the end of every response, you MUST include a JSON block with any extracted or updated fields.
-Format:
+Every single response MUST end with a JSON block in this exact format:
 \`\`\`json
 {
-  "HighBP": null,
-  "HighChol": null,
+  "HighBP": 1,
+  "BMI": 24.5,
   "ready_to_predict": false
 }
 \`\`\`
-Set "ready_to_predict": true only when you have collected enough info (at least 5-6 key fields).
+Only set "ready_to_predict": true when you have at least 6-7 key fields.
 `;
 
 const FOLLOWUP_PROMPT = `
-The user wants deeper insights. Collect more detailed lifestyle data one by one.
-Fields:
-1. MentHlth (Days of poor mental health in last 30 days)
-2. PhysHlth (Days of poor physical health in last 30 days)
-3. DiffWalk (Difficulty walking or climbing stairs: 0=No, 1=Yes)
+The user is seeking deeper insights. You need to collect more detailed lifestyle data.
+Ask about these fields ONE BY ONE:
+- MentHlth (Poor mental health days in last 30), PhysHlth (Poor physical health days in last 30), DiffWalk (Difficulty walking/stairs).
 
-MANDATORY: include JSON at the end.
-Do NOT set "ready_to_predict": true until you have collected at least 3 additional fields.
+MANDATORY: Follow the same JSON rules as the initial prompt.
 `;
 
 async function callGemini(systemPrompt, history, message) {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ 
+        model: "gemini-1.5-flash",
+        systemInstruction: systemPrompt
+    });
     const chat = model.startChat({
         history: history,
-        generationConfig: { maxOutputTokens: 500 }
+        generationConfig: { 
+            maxOutputTokens: 800,
+            temperature: 0.7
+        }
     });
-    const result = await chat.sendMessage(message + "\n\n" + systemPrompt);
+    const result = await chat.sendMessage(message);
     return result.response.text();
 }
 
@@ -133,7 +129,7 @@ export async function POST(req) {
 
         chat.messages.push({ role: 'user', content: message });
 
-        const history = chat.messages.map(m => ({
+        const history = chat.messages.slice(0, -1).map(m => ({
             role: m.role,
             parts: [{ text: m.content }]
         }));
@@ -193,6 +189,11 @@ export async function POST(req) {
                 });
             } catch (err) {
                 console.error("ML API Error:", err);
+                return NextResponse.json({
+                    reply: botReply + "\n\n(Note: I'm currently having trouble calculating your risk score. Please try again in a moment.)",
+                    riskAssessment: chat.riskAssessment,
+                    complete: false
+                });
             }
         }
 

@@ -28,30 +28,45 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     const login = async (email, password) => {
-        const res = await axios.post(`${API_URL}/api/auth/login`, { email, password });
-        const { token, user } = res.data;
-        localStorage.setItem('token', token);
-        localStorage.setItem('user', JSON.stringify(user));
-        setUser(user);
-        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        try {
+            const res = await axios.post(`${API_URL}/api/auth/login`, { email, password });
+            const { token, user } = res.data;
+            localStorage.setItem('token', token);
+            localStorage.setItem('user', JSON.stringify(user));
+            setUser(user);
+            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        } catch (err) {
+            console.error("Login Error:", err.response?.data?.message || err.message);
+            throw err;
+        }
     };
 
     const register = async (name, email, password) => {
-        const res = await axios.post(`${API_URL}/api/auth/register`, { name, email, password });
-        const { token, user } = res.data;
-        localStorage.setItem('token', token);
-        localStorage.setItem('user', JSON.stringify(user));
-        setUser(user);
-        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        try {
+            const res = await axios.post(`${API_URL}/api/auth/register`, { name, email, password });
+            const { token, user } = res.data;
+            localStorage.setItem('token', token);
+            localStorage.setItem('user', JSON.stringify(user));
+            setUser(user);
+            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        } catch (err) {
+            console.error("Registration Error:", err.response?.data?.message || err.message);
+            throw err;
+        }
     };
 
     const googleLogin = async (credential) => {
-        const res = await axios.post(`${API_URL}/api/auth/google`, { credential });
-        const { token, user } = res.data;
-        localStorage.setItem('token', token);
-        localStorage.setItem('user', JSON.stringify(user));
-        setUser(user);
-        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        try {
+            const res = await axios.post(`${API_URL}/api/auth/google`, { credential });
+            const { token, user } = res.data;
+            localStorage.setItem('token', token);
+            localStorage.setItem('user', JSON.stringify(user));
+            setUser(user);
+            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        } catch (err) {
+            console.error("Google Auth Error:", err.response?.data?.message || err.message);
+            throw err;
+        }
     };
 
     const logout = () => {

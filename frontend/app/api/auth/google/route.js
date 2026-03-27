@@ -7,6 +7,9 @@ import { OAuth2Client } from 'google-auth-library';
 export async function POST(req) {
     try {
         const googleClientId = process.env.GOOGLE_CLIENT_ID || process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+        if (!googleClientId) {
+            throw new Error("GOOGLE_CLIENT_ID is not configured");
+        }
         const client = new OAuth2Client(googleClientId);
         await dbConnect();
         const { credential } = await req.json();
