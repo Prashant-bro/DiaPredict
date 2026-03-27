@@ -42,32 +42,28 @@ Ask about these fields ONE BY ONE:
 MANDATORY: Follow the same JSON rules as the initial prompt.
 `;
 
+import { GoogleGenerativeAI } from '@google/generative-ai';
+
 async function callGemini(systemPrompt, history, message) {
-    const API_KEY = process.env.GEMINI_API_KEY;
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
-    
-    const contents = history.map(h => ({
-        role: h.role,
-        parts: h.parts
-    }));
-    contents.push({ role: "user", parts: [{ text: message }] });
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ 
+        model: "gemini-1.5-flash",
+        systemInstruction: systemPrompt
+    });
+    const chat = model.startChat({
+        history: history,
+        generationConfig: { 
+            maxOutputTokens: 800,
+            temperature: 0.7
+        }
+    });
 
     try {
-        const response = await axios.post(url, {
-            system_instruction: { 
-                parts: [{ text: systemPrompt }] 
-            },
-            contents: contents,
-            generationConfig: {
-                maxOutputTokens: 800,
-                temperature: 0.7
-            }
-        });
-        
-        return response.data.candidates[0].content.parts[0].text;
+        const result = await chat.sendMessage(message);
+        return result.response.text();
     } catch (error) {
-        console.error("Gemini REST API Error:", error.response?.data || error.message);
-        throw new Error("Failed to communicate with AI service.");
+        console.error("Gemini SDK Error:", error.message);
+        throw new Error("API Rate Limit exceeded or connection failed.");
     }
 }
 

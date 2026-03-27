@@ -53,3 +53,8 @@ frontend/CLAUDE.md
 frontend/lint_unix.txt
 frontend/lint_output.json
 frontend/lint_output.txt
+
+# Gemini & Local Test Scripts
+test-*.js
+fetch-*.txt
+fetch-*.json
