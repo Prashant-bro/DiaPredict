@@ -3,7 +3,7 @@ import Assessment from "@/lib/models/Assessment";
 import { verifyAuth } from "@/lib/auth";
 import { NextResponse } from "next/server";
 import axios from 'axios';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+
 
 const ML_API_URL = process.env.ML_API_URL || 'http://localhost:8000';
 
@@ -43,20 +43,32 @@ MANDATORY: Follow the same JSON rules as the initial prompt.
 `;
 
 async function callGemini(systemPrompt, history, message) {
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ 
-        model: "gemini-1.5-flash",
-        systemInstruction: systemPrompt
-    });
-    const chat = model.startChat({
-        history: history,
-        generationConfig: { 
-            maxOutputTokens: 800,
-            temperature: 0.7
-        }
-    });
-    const result = await chat.sendMessage(message);
-    return result.response.text();
+    const API_KEY = process.env.GEMINI_API_KEY;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+    
+    const contents = history.map(h => ({
+        role: h.role,
+        parts: h.parts
+    }));
+    contents.push({ role: "user", parts: [{ text: message }] });
+
+    try {
+        const response = await axios.post(url, {
+            system_instruction: { 
+                parts: [{ text: systemPrompt }] 
+            },
+            contents: contents,
+            generationConfig: {
+                maxOutputTokens: 800,
+                temperature: 0.7
+            }
+        });
+        
+        return response.data.candidates[0].content.parts[0].text;
+    } catch (error) {
+        console.error("Gemini REST API Error:", error.response?.data || error.message);
+        throw new Error("Failed to communicate with AI service.");
+    }
 }
 
 function buildPayload(data) {
