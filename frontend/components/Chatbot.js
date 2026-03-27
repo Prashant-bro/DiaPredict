@@ -125,6 +125,7 @@ const Chatbot = ({ onAssessmentComplete }) => {
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
     const [uploading, setUploading] = useState(false);
+    const [isFetchingHistory, setIsFetchingHistory] = useState(true);
     const [riskResults, setRiskResults] = useState([]);
     const messagesEndRef = useRef(null);
 
@@ -134,7 +135,7 @@ const Chatbot = ({ onAssessmentComplete }) => {
 
     useEffect(() => {
         const fetchHistory = async () => {
-            setLoading(true);
+            setIsFetchingHistory(true);
             try {
                 const res = await axios.get(`${API_URL}/api/chat`);
                 if (res.data.messages && res.data.messages.length > 0) {
@@ -149,7 +150,7 @@ const Chatbot = ({ onAssessmentComplete }) => {
             } catch (error) {
                 console.error("Failed to fetch chat history:", error);
             } finally {
-                setLoading(false);
+                setIsFetchingHistory(false);
             }
         };
         fetchHistory();
@@ -349,20 +350,20 @@ const Chatbot = ({ onAssessmentComplete }) => {
                             type="text"
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
-                            placeholder="Message DiaRisk..."
+                            placeholder={isFetchingHistory ? "Connecting to DiaRisk..." : "Message DiaRisk..."}
                             className="w-full bg-white/[0.04] hover:bg-white/[0.06] focus:bg-white/[0.06] border border-white/[0.08] focus:border-cyan-500/30 text-[15px] text-white placeholder-slate-500 rounded-2xl pl-12 pr-4 py-3.5 outline-none transition-all duration-200"
-                            disabled={loading || uploading}
+                            disabled={loading || uploading || isFetchingHistory}
                         />
                         <div className="absolute left-1.5 top-1/2 -translate-y-1/2 rounded-full">
                             <label className="cursor-pointer flex items-center justify-center p-2 text-slate-500 hover:text-cyan-400 transition-all duration-200">
                                 {uploading ? <Loader2 className="w-5 h-5 animate-spin text-cyan-400" /> : <Paperclip className="w-5 h-5" />}
-                                <input type="file" accept=".pdf" onChange={handleFileUpload} className="hidden" disabled={uploading || loading} />
+                                <input type="file" accept=".pdf" onChange={handleFileUpload} className="hidden" disabled={uploading || loading || isFetchingHistory} />
                             </label>
                         </div>
                     </div>
                     <button 
                         type="submit" 
-                        disabled={loading || uploading || !input.trim()} 
+                        disabled={loading || uploading || isFetchingHistory || !input.trim()} 
                         className="p-3.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 disabled:from-slate-800 disabled:to-slate-800 disabled:text-slate-600 disabled:cursor-not-allowed text-white rounded-xl transition-all duration-200 shadow-lg shadow-cyan-600/20 disabled:shadow-none cursor-pointer outline-none"
                     >
                         <Send className="w-5 h-5" />
